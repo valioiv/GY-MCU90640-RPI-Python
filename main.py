@@ -18,26 +18,36 @@ def get_temp_array(d):
 	# getting raw array of pixels temperature
 	raw_data = d[4:1540]
 	T_array = np.frombuffer(raw_data, dtype=np.int16)
+
+	Tmin = min(T_array)
+	Tmax = max(T_array)
 	
-	return T_a, T_array
+	return Tmin, Tmax, T_a, T_array
 
 # function to convert temperatures to pixels on image
-def td_to_image(f):
+def td_to_image(f, Tmin, Tmax):
 	norm = np.uint8((f/100 - Tmin)*255/(Tmax-Tmin))
 	norm.shape = (24,32)
 	return norm
 
 ########################### Main cycle #################################
 # Color map range
-Tmax = 40
-Tmin = 20
+Tmax = 0 #40
+Tmin = 500 #20
 
 print ('Configuring Serial port')
-ser = serial.Serial ('/dev/serial0')
-ser.baudrate = 115200
+ser = serial.Serial ('/dev/ttyUSB0', baudrate=115200)
+#ser.baudrate = 115200
 
-# set frequency of module to 4 Hz
-ser.write(serial.to_bytes([0xA5,0x25,0x01,0xCB]))
+# time.sleep(0.1)
+# ser.write(serial.to_bytes([0xA5,0x15,0x03,0xBD]))
+# time.sleep(0.1)
+# ser.close()
+# ser = serial.Serial ('/dev/ttyUSB0', baudrate = 460800)
+# #ser.baudrate = 460800
+
+# set frequency of module to 8 Hz
+ser.write(serial.to_bytes([0xA5,0x25,0x04,0xCE]))
 time.sleep(0.1)
 
 # Starting automatic data colection
@@ -50,16 +60,16 @@ try:
 		data = ser.read(1544)
 		
 		# The data is ready, let's handle it!
-		Ta, temp_array = get_temp_array(data)
-		ta_img = td_to_image(temp_array)
+		Tmin, Tmax, Ta, temp_array = get_temp_array(data)
+		ta_img = td_to_image(temp_array, Tmin/100, Tmax/100)
 		
 		# Image processing
 		img = cv2.applyColorMap(ta_img, cv2.COLORMAP_JET)
-		img = cv2.resize(img, (320,240), interpolation = cv2.INTER_CUBIC)
+		img = cv2.resize(img, (1024,768), interpolation = cv2.INTER_CUBIC)
 		img = cv2.flip(img, 1)
 		
-		text = 'Tmin = {:+.1f} Tmax = {:+.1f} FPS = {:.2f}'.format(temp_array.min()/100, temp_array.max()/100, 1/(time.time() - t0))
-		cv2.putText(img, text, (5, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 0), 1)
+		text = 'Tambient = {:+.1f} Tmin = {:+.1f} Tmax = {:+.1f} FPS = {:.2f}'.format(Ta, temp_array.min()/100, temp_array.max()/100, 1/(time.time() - t0))
+		cv2.putText(img, text, (5, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 0), 3, )
 		cv2.imshow('Output', img)
 		
 		# if 's' is pressed - saving of picture
