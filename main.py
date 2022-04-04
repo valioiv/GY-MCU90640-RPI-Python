@@ -36,8 +36,8 @@ Tmax = 0 #40
 Tmin = 500 #20
 
 print ('Configuring Serial port')
-ser = serial.Serial ('/dev/ttyUSB0', baudrate=115200)
-#ser.baudrate = 115200
+ser = serial.Serial ('/dev/ttyUSB0')
+ser.baudrate = 115200
 
 # time.sleep(0.1)
 # ser.write(serial.to_bytes([0xA5,0x15,0x03,0xBD]))
